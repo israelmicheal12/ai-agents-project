@@ -74,6 +74,14 @@ def main() -> int:
     #   Then answer, in DECISIONS.md: your system will call two different
     #   models. What does this measurement tell you about switching between
     #   them inside one request, and what would you do instead?
+    subprocess.run(["ollama", "stop", SMALL.name])
+    cold_reply, cold_secs = timed(client, SHORT, SMALL.name)
+    warm_reply, warm_secs = timed(client, SHORT, SMALL.name)
+    cold_ratio = cold_secs / max(warm_secs, 1e-9)
+    print(f"cold call: {cold_secs:.2f}s")
+    print(f"warm call: {warm_secs:.2f}s")
+    print(f"cold/warm ratio: {cold_ratio:.2f}x")
+    
 
     # TODO 8. Estimate what a real evaluation run would cost hosted.
     #
@@ -90,6 +98,93 @@ def main() -> int:
     #
     #   Label them as estimates. They are not measurements and the price
     #   list is dated {PRICE_DATE}.
+
+    # The golden set will contain 200 test cases.
+    cases = 200
+
+    # We run the evaluation once every night for 14 weeks.
+    # 14 weeks * 7 nights = 98 runs.
+    nights = 14 * 7
+
+
+    # rows[1] is the long case.
+    # Get its number of input tokens.
+    input_tokens = rows[1]["prompt_tokens"]
+
+    # Get its number of output tokens.
+    output_tokens = rows[1]["completion_tokens"]
+
+
+    # Estimate the cost of running 200 cases once
+    # using the small tier.
+    small_one = estimate(
+        input_tokens * cases,
+        output_tokens * cases,
+        tier="small"
+    )
+
+
+    # Estimate the cost of running 200 cases once
+    # using the large tier.
+    large_one = estimate(
+        input_tokens * cases,
+        output_tokens * cases,
+        tier="large"
+    )
+
+
+    # Estimate the total cost of running the 200 cases
+    # every night for 14 weeks using the small tier.
+    small_semester = estimate(
+        input_tokens * cases * nights,
+        output_tokens * cases * nights,
+        tier="small"
+    )
+
+
+    # Estimate the total cost of running the 200 cases
+    # every night for 14 weeks using the large tier.
+    large_semester = estimate(
+        input_tokens * cases * nights,
+        output_tokens * cases * nights,
+        tier="large"
+    )
+
+
+    # Print the estimated cost for one 200-case run
+    # using the small tier.
+    print(
+        f"Small tier, one 200-case run: "
+        f"{small_one.total:.5f} EUR"
+    )
+
+    # Print the estimated small-tier cost for
+    # nightly runs over 14 weeks.
+    print(
+        f"Small tier, nightly for 14 weeks: "
+        f"{small_semester.total:.5f} EUR"
+    )
+
+    # Print the estimated cost for one 200-case run
+    # using the large tier.
+    print(
+        f"Large tier, one 200-case run: "
+        f"{large_one.total:.5f} EUR"
+    )
+
+    # Print the estimated large-tier cost for
+    # nightly runs over 14 weeks.
+    print(
+        f"Large tier, nightly for 14 weeks: "
+        f"{large_semester.total:.5f} EUR"
+    )
+
+    # The euro values come from the course price list.
+    # They are estimates, not actual money spent.
+    print(
+        f"Price list date: {PRICE_DATE}. "
+        "Estimates, not measurements."
+    )
 
     write_json("artifacts/week01_cost.json",
                {"rows": rows, "price_list_date": PRICE_DATE})
