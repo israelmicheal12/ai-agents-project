@@ -20,9 +20,7 @@ are stated once here and referred to rather than repeated.
 
 ### 1. Machine and model set
 
-I am running the required model set plus the optional qwen2.5:7b model.
-
-The qwen3-vl:4b vision model is not installed yet. I will install it before week 9.
+I am running the required model set plus the optional qwen2.5:7b  and qwen3-vl:4b  model . qwen3-vl:4b vision model is  installed on 2026-09-28 .
 
 ### 2. The first call
 
@@ -94,4 +92,4 @@ not use the large tier every night because the estimated cost is much higher.]
 
 ### Deferred
 
-[The qwen3-vl:4b model is not installed yet.I willinstall it before week 9.I ran `02_variance.py --full`, but the provided starter code still produced only four live cells instead of the eight cells described in the homework. I left the starter code unchanged.]
+[I ran `02_variance.py --full`, but the provided starter code still produced only four live cells instead of the eight cells described in the homework. I left the starter code unchanged.]
