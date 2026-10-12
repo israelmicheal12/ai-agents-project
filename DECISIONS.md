@@ -93,3 +93,128 @@ not use the large tier every night because the estimated cost is much higher.]
 ### Deferred
 
 [I ran `02_variance.py --full`, but the provided starter code still produced only four live cells instead of the eight cells described in the homework. I left the starter code unchanged.]
+# Week 2: a structured-output extractor, measured
+
+Copy this into your `DECISIONS.md` and fill it in.
+
+---
+
+## Week 2
+
+**Run conditions.** model: [qwen3:4b-instruct] ] | temperature: 0.0 | prompt version: [ week02-zero-shot-v1] |
+served locally | date: [2026-10-12] | scored on: [ my own machine]
+
+### 1. The output contract
+
+The conventions I chose, and why:
+
+- due_date, when the message states no date: [ use None, which becomes null in JSON]
+- due_date, when the message states only a relative expression: [ use None and do not calculate a calendar date]
+- quote, and what "verbatim" means in my scorer: [ the quote must appear exactly in the original message without changing, translating, or normalizing it]
+- what my scorer does with a record that failed validation: [counts it as invalid and counts all four fields as wrong ]
+
+[One sentence on why the last one matters. A scorer that skips the records
+it could not parse reports a number that improves as the model gets worse.]
+
+[This matters because if failed records were skipped, the reported score
+could look better even though the model was producing more invalid outputs.]
+
+
+### 2. Zero-shot, per field
+
+| field | correct | of |
+| category |10 | 10 |
+| urgency |9 | 10 |
+| due_date |6 | 10 |
+| quote |8 | 10 |
+| invalid records |0 | 10 |
+
+My prediction, written before block 3: examples will help most on [ due_date]
+because [ most of the zero-shot errors were due_date errors. The model sometimes created a date from a relative expression or returned the string "null" instead of the null value].
+
+### 3. Few-shot
+
+Examples chosen, and the job each one does:
+
+| example | why it is in the block | field it should move |
+| EX-02 | French facilities example with urgent behavior and no calendar date | category / due_date |
+| EX-04 | Shows that a relative expression such as "next week" should still produce null | due_date / urgency |
+| EX-05 | Shows a real French calendar date converted to ISO format | due_date |
+| EX-01 | Shows an access request with no deadline and standard urgency | due_date / urgency |
+
+| field | zero-shot | few-shot | move |
+| category | 10/10 | 10/10 | 0 |
+| urgency | 9/10 | 10/10 | +1 |
+| due_date | 6/10 | 7/10 | +1 |
+| quote | 8/10 | 6/10 | -2 |
+
+[My prediction was partly correct. due_date improved from 6/10 to 7/10,
+but urgency also improved from 9/10 to 10/10. The quote field became worse,
+dropping from 8/10 to 6/10.]
+
+### 4. What got worse
+
+[Name the field, if any, and diagnose it. If nothing got worse, say so and
+say how you checked. Then look at the failure lines rather than the counts,
+and say whether any error disappeared or merely changed shape. A wrong label
+that became a different wrong label has not been fixed.]
+
+[The quote field got worse, decreasing from 8/10 in zero-shot to 6/10
+in few-shot. REQ-03 and REQ-05 became new quote failures, while the quote
+errors on REQ-04 and REQ-06 were still present. The failed quotes contained
+changed, truncated, or added text, so they were no longer exact substrings
+of the original messages.
+
+Some errors really disappeared: the urgency error on REQ-02 was fixed, and
+the due_date error on REQ-08 was fixed. Other errors only changed shape.
+For example, REQ-01 changed from an invented date of 2023-10-10 to another
+invented date of 2024-04-15. REQ-05 changed from the string "null" to the
+invented date 2024-12-31. REQ-10 remained wrong with 2024-12-31.]
+
+### 5. What the examples cost
+
+- extra input tokens per call: [ 364]
+- per thousand calls: [ 364000]
+- estimated euros per thousand calls on the small tier: [0.0728 EUR ], against the
+  price list dated [2026-08-10 ]. Estimate, not a measurement.
+
+### 6. Ship it or not
+
+[Which variant, on what evidence, and what would change your mind. Ten
+records is not enough to be confident and saying so is worth more than
+claiming a win. If your answer is "keep one example and drop the rest", say
+which one and why.]
+
+[I would not ship the few-shot variant in its current form. It improved
+urgency from 9/10 to 10/10 and due_date from 6/10 to 7/10, but quote
+accuracy decreased from 8/10 to 6/10 and the examples add 364 input tokens
+to every call. The evaluation also contains only ten records, which is too
+small to be confident that the improvements will generalize. I would change
+my mind if a revised example block kept the urgency and due_date improvements
+without reducing quote accuracy, and the result held on a larger evaluation
+set.]
+
+### Sensitivity variant
+
+Variant assigned: [role]. What I changed: [prepended "You are a senior service desk analyst." to the few-shot system prompt]. What moved: [nothing; all four field scores stayed the same].
+
+[My prediction was correct. I predicted that the role sentence would make little or no difference because the task already has fixed labels, a structured schema, and explicit instructions. In the live run, category stayed 10/10, urgency stayed 10/10, due_date stayed 7/10, and quote stayed 6/10. The per-language field-error counts also did not change.]
+
+### The gold set
+
+Ten cases written to `artifacts/goldset.json`, tagged by language.
+
+One thing my scorer cannot currently detect:
+
+[This is the most valuable line on the page. An example: "our scorer cannot
+tell a correctly formatted date that is simply the wrong date from a
+correctly extracted one, because it only compares strings."]
+
+
+[The quote scorer can check that the quote is an exact substring of the
+original message, but it cannot tell whether that substring actually
+supports the urgency decision.]
+
+### Deferred
+
+[Nothing from the required Week 2 work was deferred.]
