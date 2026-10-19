@@ -411,4 +411,92 @@ What I would build first to bound that, and the week I expect to build it in:
 
 ### Deferred
 
-[A separate token or monetary budget is deferred because the Week 4 starter uses max_steps as its budget. I would add a token budget as a stronger production safeguard.]
+[A separate token or monetary budget is deferred because the Week 4 starter uses max_steps as its budget. I would add a token budget as a stronger production safeguard.]# Week 5: a planner, an executor, and a second agent
+
+Copy this into your `DECISIONS.md` and fill it in.
+
+---
+
+## Week 5
+
+**Run conditions.** model: [qwen2.5:7b] | framework: Pydantic AI [2.27.1] |
+runs per architecture: [3] | served locally | date: [2026-10-19] |
+table from: [the recording]
+
+### 1. The plan schema
+
+What I tried first, and what happened:
+
+[I used the flat Plan schema with goal, steps, and suspect_file. On my live
+run, Pydantic AI reached "Exceeded maximum output retries (3)" because the
+model did not return valid structured output. I also tested NativeOutput only
+as a diagnostic. It returned a valid Plan object, but it incorrectly chose
+models.py as the suspect file.]
+
+What I shipped, and why it is shaped that way:
+
+[I kept the plan shallow with goal: str, steps: list[str], and
+suspect_file: str. A flat list is easier for this model to produce than a
+nested list of Step objects, and it still gives us an ordered plan that can
+be checked before execution.]
+
+### 2. The validator
+
+| check | what it catches |
+| step count is between 2 and 6 | plans that are too short or too long |
+| suspect_file is a known source file | made-up or incorrect file names |
+| a step runs or checks the tests | plans with no verification step |
+| no step edits a test file | plans that try to change the tests instead of fixing the code |
+
+On a failed check my system [refuses in the intended policy], because
+[a plan that already fails a free deterministic check should not be trusted].
+
+[For the supplied comparison experiment I left the lecturer's runner
+unchanged, so invalid plans are still recorded and the comparison continues.]
+
+### 3. The three-way table
+
+| architecture | green | tokens (mean) | seconds (mean) |
+| A baseline | 0/3 | 10470 | 40.1 |
+| B planner | 2/3 | 1751 | 15.0 |
+| C planner + reviewer | 0/3 | 3441 | 29.0 |
+
+### 4. Why the baseline fails
+
+[The main difference is the amount of control given to the model. The
+baseline can choose tools, their order, and how many times to use them, so it
+has a much larger action space and can waste calls. The planner architecture
+narrows the task to one structured fix proposal and deterministic code
+applies and checks the change. The model is the same, but the architecture
+gives it less freedom.]
+
+### 5. The reviewer
+
+Verdicts across my runs: [0] approve, [3] reject.
+
+Would I ship it: [No]. Extra cost: [1690] tokens, [14.0] seconds per run.
+
+[The reviewer rejected the correct >= fix in all three recorded runs. In the
+first run it said >= was the wrong comparison. In the second it said the
+change did not fix the 20:00 case. In the third it said including exactly
+20:00 was incorrect, even though that was the required behavior.]
+
+The case where it would earn its cost:
+
+[It would be useful if it could catch a change that passes the current tests
+but is still logically wrong, especially when the reviewer has different
+information or expertise from the fixer.]
+
+### 6. What my verifier cannot catch
+
+[A test suite only checks cases that somebody wrote tests for. For example,
+changing OFF_PEAK_FROM_HOUR from 20 to 19 instead of fixing the > comparison
+can make the failing 20:00 test pass while leaving the implementation of the
+business rule wrong. If no test checks that mistake, the suite can still be
+green.]
+
+### Deferred
+
+[The full three-runs-per-architecture live comparison and Task B refactoring
+are deferred. The recorded comparison was used because my local planner with
+the normal Pydantic AI structured output reached the maximum output retries.]
