@@ -500,3 +500,73 @@ green.]
 [The full three-runs-per-architecture live comparison and Task B refactoring
 are deferred. The recorded comparison was used because my local planner with
 the normal Pydantic AI structured output reached the maximum output retries.]
+# Week 6: memory, a stateless MCP server, and an A2A channel
+
+Copy this into your `DECISIONS.md` and fill it in.
+
+---
+
+## Week 6
+
+**Run conditions.** MCP SDK version: [2.0.0rc1] | specification revision:
+2026-07-28 | model: [No model was called in the Week 6 memory, MCP, or A2A tests] | served locally | date: [2026-10-25]
+
+### 1. The handle
+
+Format I chose: [`fact-` followed by 12 random hexadecimal characters using `secrets.token_hex(6)`.]
+
+A guessable handle would expose: [Someone could guess another resident's handle and possibly access their information.]
+
+### 2. Conflict and retention
+
+- A write that contradicts an older fact: [keep both ], because [I want to keep the old information instead of losing it. The problem is that the facts may contradict each other. ]
+- How long a record lives: [ The facts do not expire automaically .They stay until they are deleted ], because [ I kept the memory store simple for this lab. In a real system, I would need a time limit so personal information is not stored forever.]
+
+[Nothing expires by default. If you kept it that way, say so explicitly
+rather than leaving it unsaid. An undeclared retention policy is still a
+retention policy.]
+
+### 3. What k costs
+
+k = [3 by default ]. Tokens added per call: [ Not measured yet. It depends on the length of the facts returned.].
+
+At four hundred facts in the store, this design [ still returns at most k facts, but it has to search through the stored facts to find the matches. This may make searching slower as the number of facts grows.].
+
+### 4. Memory off against memory on
+
+| | tokens | turns to finish |
+| memory off | | |
+| memory on | | |
+
+[The interesting result is usually that memory costs more tokens per call
+and fewer calls per task. Whether that is a win depends on the task, and
+saying which way it went for you is the entry.]
+
+### 5. The protocol, at the wire
+
+| server mode | status | Mcp-Session-Id | answered |
+| stateless_http=True |200 |none  |yes  |
+| stateless_http=False | 400| present | no |
+
+The error the session-mode server returned, quoted exactly:
+
+[ Bad Request: Missing session ID]
+
+Why the two-server handle demonstration does not prove this on its own:
+
+[ Both servers use the same JSON file, so the second server can read the first server's data. This would also work in session mode. The raw HTTP test proves the difference because the same request succeeds in stateless mode and fails in session mode.]
+
+### 6. What forget does not reach
+
+[The forget function deletes a fact from the JSON memory file, but it
+cannot remove information already copied into a conversation.
+
+If a resident asks to delete something, the stored fact will be removed,
+but the information may still appear in earlier conversation messages.
+The system should not use that deleted information again.]
+
+### Deferred
+
+[The memory-off versus memory-on comparison was not completed, so I do not have actual token counts or turns to finish for both cases.
+
+I also did not measure the exact token cost of returning k facts. I completed and tested the memory functions, MCP tools, stateless HTTP comparison, and A2A demonstration.]
