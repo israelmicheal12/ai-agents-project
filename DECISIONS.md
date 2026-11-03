@@ -570,3 +570,131 @@ The system should not use that deleted information again.]
 [The memory-off versus memory-on comparison was not completed, so I do not have actual token counts or turns to finish for both cases.
 
 I also did not measure the exact token cost of returning k facts. I completed and tested the memory functions, MCP tools, stateless HTTP comparison, and A2A demonstration.]
+
+---
+
+## Week 7
+
+**Run conditions.** embedding model: nomic-embed-text:latest |
+dimensionality: 768 | chunk size: 600 | overlap: 80 |
+k: 5 | store: Chroma | date: 2026-11-03 |
+table from: my own index
+
+
+### 1. The chunker
+
+I used a chunk size of 600 characters and an overlap of 80 characters.
+I chose these settings because the overlap helps preserve context
+between neighbouring chunks while keeping each chunk reasonably small.
+
+I also tested three chunk sizes with the same overlap of 80 characters:
+
+| Chunk size | Number of chunks | Dense top-5 success |
+| --- | --- | --- |
+| 300 | 161 | 10/11 |
+| 600 | 84 | 10/11 |
+| 1200 | 57 | 10/11 |
+
+For dense retrieval, only Q05 changed rank: 32 at size 300,
+22 at size 600, and 20 at size 1200. All other answerable
+questions remained at rank 1.
+
+For keyword retrieval, the rankings changed for Q01, Q02,
+Q03, Q05, Q06, Q07, Q09 and Q11.
+
+For example, Q02 had keyword rank 9 at size 300, but rank 1
+at sizes 600 and 1200.
+
+The overall top-five success rate did not change.
+I decided to keep size 600 and overlap 80 as my baseline.
+
+
+### 2. The index
+
+84 chunks, 768 dimensions, 2.767 seconds for one full indexing run.
+
+Embedding model: nomic-embed-text:latest.
+The time includes embedding generation and insertion into ChromaDB.
+
+### 3. The table
+
+| qid | dense rank | keyword rank | recall@5 | tags |
+| --- | --- | --- | --- | --- |
+| Q01 | 1 | 2 | 1.00 | distractor, superseded |
+| Q02 | 1 | 1 | 1.00 | rare-token |
+| Q03 | 1 | 1 | 1.00 | easy |
+| Q04 | 1 | 1 | 1.00 | vocabulary |
+| Q05 | 22 | 7 | 0.00 | multi-document |
+| Q06 | 1 | 16 | 1.00 | negation |
+| Q07 | 1 | 3 | 1.00 | easy |
+| Q08 | 1 | 1 | 1.00 | numeric |
+| Q09 | 1 | 2 | 1.00 | distractor |
+| Q10 | 1 | 1 | 1.00 | easy |
+| Q11 | 1 | 5 | 1.00 | easy |
+| Q12 | unanswerable | - | - | unanswerable |
+
+Dense retrieval found a gold section in the top five on 10 of
+the 11 answerable questions.
+
+### 4. Good pipeline, or easy task?
+
+Getting rank 1 on 10 of 11 answerable questions is mainly evidence that
+this test is relatively easy, not proof that the pipeline is always good.
+
+The biggest advantage for dense retrieval was Q06. Dense ranked the
+correct section first, but keyword ranked it 16th. The question asks
+about paying, while the document says the shuttle is free of charge.
+Dense retrieval can match the meaning even when the words differ.
+
+### 5. The question that fails on both
+
+Question: Q05 — "I have just moved to Remerbaach and I own a car.
+What do I have to do at the commune?"
+
+Dense rank: 22. Keyword rank: 7.
+
+Why it fails:
+
+This question needs information from two documents: the arrival
+declaration and the resident parking vignette application. Both
+retrievers miss the required information in their top five results.
+
+Would any chunk size fix it?
+
+Not reliably. Changing the chunk size might change the ranking, but
+the main problem is that the question requires combining information
+from two documents. Splitting the question into two searches and
+combining the results would be a better approach.
+
+### 6. The gold-set correction
+
+The note said:
+
+The rare exact token RB-1140b should make keyword retrieval perform
+better than dense retrieval.
+
+My measurement said:
+
+For Q02, both dense and keyword retrieval ranked the correct
+section first (rank 1).
+
+The corrected note:
+
+The query contains the rare token RB-1140b. In our experiment,
+both dense and keyword retrieval found the correct section at
+rank 1. Keyword retrieval did not outperform dense retrieval.
+The superseded page contains the similar token RB-1140a.
+
+One measurement was enough to show that the original prediction
+was incorrect.
+
+
+### Deferred
+
+The chunk-size sweep at 300, 600 and 1200 is completed.
+
+Integration into the Week 6 memory store is still pending.
+
+This retrieval evaluation measures whether the correct sections
+are found. It does not prove that a generated answer will be
+factually correct or properly grounded in those sections.
