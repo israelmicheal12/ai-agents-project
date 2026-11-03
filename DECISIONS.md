@@ -734,3 +734,72 @@ Luxembourg municipal information.
 The command python -m project.verify completed successfully.
 The Week 8 retry and approval stages and Week 9 stages remain
 unfinished.
+
+## Week 8 — Retries, recovery, and human approval
+
+**Run conditions:** November 3, 2026.
+Retry attempts: 3. LangGraph version: 1.2.19.
+Fault seed and base delay: to be confirmed from the harness.
+Integrated search retry maximum elapsed: 3 seconds.
+
+### 1. Which errors are retryable
+
+I retry ToolTimeout, RateLimited, and ServerError because these
+errors may be temporary.
+
+I do not retry ContractDrift because the call has already succeeded
+but returned an unexpected structure. Retrying does not fix
+an incompatible data contract.
+
+### 2. The fault matrix
+
+| Test | Correct | WRONG | Degraded | Failed |
+|---|---:|---:|---:|---:|
+| Baseline | 1 | 0 | 2 | 5 |
+| Hardened | 2 | 0 | 5 | 1 |
+
+Hardening reduced failures from 5 to 1. More cases returned
+partial results instead of failing completely.
+
+### 3. The empty result
+
+An empty result is not an exception. I treat it as missing
+information rather than retrying the same request automatically.
+If there is not enough evidence, the pipeline must not invent an answer.
+
+### 4. The human approval gate
+
+I gate case submission because it changes an external record.
+Searching, extracting, and drafting do not require approval.
+
+In unattended mode, the gate immediately returns a timeout decision.
+This prevents automatic submission without approval.
+
+The approval payload contains the case ID, exact arguments,
+evidence, degradation status, and missing information.
+It does not replace the original arguments with a model summary.
+
+The approval checkpoint was successfully resumed from another process.
+
+### 5. Duplicate side effects
+
+The duplicate-side-effect experiment has not yet been performed.
+
+My approval node performs no external writes before interrupt().
+This is important because code before an interrupt can execute again
+when the workflow resumes.
+
+### Integration results
+
+Retry and gate are both reported as built.
+
+The request route stopped safely at pending human approval.
+
+The unattended batch completed 58 cases:
+45 OK, 12 blocked, and 1 refused.
+
+### Deferred
+
+The duplicate-side-effect experiment remains to be completed.
+The plan, vision, and checks stages remain unfinished.
+
