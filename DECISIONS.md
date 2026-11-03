@@ -698,3 +698,39 @@ Integration into the Week 6 memory store is still pending.
 This retrieval evaluation measures whether the correct sections
 are found. It does not prove that a generated answer will be
 factually correct or properly grounded in those sections.
+
+## Week 8 — Integration of Weeks 2–7
+
+### Week 5: Planner and reviewer
+I integrated the structured planner and deterministic plan validation.
+The planner generates steps, but the existing Week 4 agent executes
+the task independently rather than executing the plan step by step.
+
+I did not enable the reviewer because my Week 5 evaluation showed
+that it incorrectly rejected useful answers. The reviewer remains
+marked as a stub so this limitation is visible.
+
+### Week 6 and Week 7: Memory and retrieval
+I kept Week 6 private memory separate from Week 7 document retrieval.
+
+MemoryStore.search() filters facts by subject before retrieving them.
+The MCP recall tool continues to return only saved resident facts.
+
+For the fictional document corpus, I used dense retrieval with a
+chunk size of 600 characters and an overlap of 80 characters,
+following my Week 7 decision.
+
+I integrated the document retriever separately into the answering
+pipeline. Its index is cached within the Python process.
+
+### Integration verification
+The application test returned one private memory result and three
+document chunks. The answering agent used the retrieved collection
+calendar to produce an answer.
+
+The document corpus is fictional course material, not official
+Luxembourg municipal information.
+
+The command python -m project.verify completed successfully.
+The Week 8 retry and approval stages and Week 9 stages remain
+unfinished.
